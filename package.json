@@ -1,0 +1,20 @@
+{
+  "name": "visual-motion-studio-v2",
+  "version": "1.0.0",
+  "description": "A graphic design app with rotoscoping, visual effects, and transitions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2/issues"
+  },
+  "homepage": "https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2#readme"
+}
