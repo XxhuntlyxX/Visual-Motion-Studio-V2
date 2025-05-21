@@ -1,0 +1,19 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #252525;
+  color: #ececec;
+  margin: 0;
+  padding: 0;
+}
+
+#app {
+  margin: 2rem auto;
+  width: 90vw;
+  height: 80vh;
+  background: #181818;
+  border-radius: 8px;
+  box-shadow: 0 0 15px #000a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
