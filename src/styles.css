@@ -146,9 +146,38 @@ canvas#preview-canvas {
 #timeline {
   background: #23272b;
   border-radius: 6px;
-  min-height: 30px;
+  min-height: 54px;
   margin-top: 8px;
   border: 1px solid #313338;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.timeline-block {
+  background: #3087e1;
+  color: #fff;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.95em;
+  transition: background 0.2s, box-shadow 0.2s;
+  min-width: 80px;
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+.timeline-block.dragging {
+  opacity: 0.5;
+  background: #205e99;
+  border: 2px dashed #aad5ff;
+}
+
+.timeline-block.over {
+  border: 2px solid #aad5ff;
 }
 
 ::-webkit-scrollbar {

@@ -19,7 +19,6 @@ function initPixi() {
 // Handle file selection for temporary preview (not project yet)
 document.getElementById('media-upload').addEventListener('change', function (event) {
   selectedFiles = Array.from(event.target.files);
-  // Display selected files in a temporary list (not projectState.media)
   updateTempMediaList();
 
   // Preview the last image file selected, if any
@@ -33,7 +32,6 @@ document.getElementById('media-upload').addEventListener('change', function (eve
   }
 });
 
-// Show temp selection in a separate pane
 function updateTempMediaList() {
   const mediaList = document.getElementById('media-list');
   mediaList.innerHTML = '';
@@ -41,12 +39,12 @@ function updateTempMediaList() {
     const listItem = document.createElement('li');
     listItem.textContent = file.name + " (not in project)";
     listItem.style.color = "#aaa";
+    listItem.style.fontStyle = "italic";
     listItem.addEventListener('click', () => previewSelectedFile(file));
     mediaList.appendChild(listItem);
   });
 }
 
-// Clicking a temp file name previews it
 function previewSelectedFile(file) {
   if (file.type.startsWith('image/')) {
     const reader = new FileReader();
@@ -76,16 +74,14 @@ document.getElementById('upload-btn').addEventListener('click', function () {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = function (e) {
-          // Only add if not already present
           if (!projectState.media.some(m => m.name === file.name && m.dataUrl === e.target.result)) {
             projectState.media.push({ name: file.name, dataUrl: e.target.result });
           }
           readersLeft--;
           if (readersLeft === 0) {
-            // All files processed: update project media list and project window
             updateProjectMediaList();
             updatePixiStage();
-            // Clear temp selection and file input
+            updateTimeline();
             selectedFiles = [];
             document.getElementById('media-upload').value = "";
             updateTempMediaList();
@@ -97,6 +93,7 @@ document.getElementById('upload-btn').addEventListener('click', function () {
         if (readersLeft === 0) {
           updateProjectMediaList();
           updatePixiStage();
+          updateTimeline();
           selectedFiles = [];
           document.getElementById('media-upload').value = "";
           updateTempMediaList();
@@ -106,19 +103,18 @@ document.getElementById('upload-btn').addEventListener('click', function () {
   }
 });
 
-// Show project media files in media-list
 function updateProjectMediaList() {
   const mediaList = document.getElementById('media-list');
   mediaList.innerHTML = '';
   projectState.media.forEach(media => {
     const listItem = document.createElement('li');
     listItem.textContent = media.name;
+    listItem.classList.add('in-project');
     listItem.addEventListener('click', () => previewImage(media.dataUrl));
     mediaList.appendChild(listItem);
   });
 }
 
-// Save Project button
 document.getElementById('save-btn').addEventListener('click', function () {
   const dataStr = JSON.stringify(projectState);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -132,7 +128,6 @@ document.getElementById('save-btn').addEventListener('click', function () {
   URL.revokeObjectURL(url);
 });
 
-// Load Project file input
 document.getElementById('load-project-file').addEventListener('change', function(event) {
   if (event.target.files.length > 0) {
     const file = event.target.files[0];
@@ -144,7 +139,7 @@ document.getElementById('load-project-file').addEventListener('change', function
           projectState = loadedState;
           updatePixiStage();
           updateProjectMediaList();
-          // Clear temp selection
+          updateTimeline();
           selectedFiles = [];
           document.getElementById('media-upload').value = "";
           updateTempMediaList();
@@ -159,7 +154,6 @@ document.getElementById('load-project-file').addEventListener('change', function
   }
 });
 
-// Draw all images in projectState.media to PixiJS
 function updatePixiStage() {
   if (pixiApp) {
     pixiApp.stage.removeChildren();
@@ -173,9 +167,72 @@ function updatePixiStage() {
   }
 }
 
-// On DOM ready, initialize PixiJS and show project media (if any)
+// --- TIMELINE ---
+
+function updateTimeline() {
+  const timeline = document.getElementById('timeline');
+  timeline.innerHTML = '';
+  projectState.media.forEach((media, idx) => {
+    const block = document.createElement('div');
+    block.className = 'timeline-block';
+    block.textContent = media.name;
+    block.setAttribute('draggable', 'true');
+    block.dataset.idx = idx;
+
+    // Preview on click
+    block.addEventListener('click', (e) => {
+      previewImage(media.dataUrl);
+    });
+
+    // Drag and drop handlers
+    block.addEventListener('dragstart', (e) => {
+      block.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', idx);
+    });
+
+    block.addEventListener('dragend', (e) => {
+      block.classList.remove('dragging');
+      Array.from(timeline.children).forEach(b => b.classList.remove('over'));
+    });
+
+    block.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      block.classList.add('over');
+    });
+
+    block.addEventListener('dragleave', (e) => {
+      block.classList.remove('over');
+    });
+
+    block.addEventListener('drop', (e) => {
+      e.preventDefault();
+      block.classList.remove('over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx = Number(block.dataset.idx);
+      if (fromIdx !== toIdx) {
+        moveMediaInProject(fromIdx, toIdx);
+      }
+    });
+
+    timeline.appendChild(block);
+  });
+}
+
+function moveMediaInProject(fromIdx, toIdx) {
+  // Move the media item in projectState.media
+  const item = projectState.media.splice(fromIdx, 1)[0];
+  projectState.media.splice(toIdx, 0, item);
+  updateTimeline();
+  updateProjectMediaList();
+  updatePixiStage();
+}
+
+// ---
+
 document.addEventListener('DOMContentLoaded', () => {
   initPixi();
   updateProjectMediaList();
   updateTempMediaList();
+  updateTimeline();
 });
