@@ -4,10 +4,35 @@
   <meta charset="UTF-8">
   <title>Graphic Design App</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script>
 </head>
 <body>
-  <h1>Graphic Design App</h1>
-  <div id="app"></div>
+  <div id="container">
+    <header>
+      <h1>Graphic Design App</h1>
+    </header>
+    <main>
+      <aside id="media-viewer">
+        <h2>Media Files</h2>
+        <input type="file" id="media-upload" multiple>
+        <ul id="media-list"></ul>
+      </aside>
+      <section id="project-window">
+        <h2>Project Window</h2>
+        <div id="pixi-canvas-container"></div>
+      </section>
+      <aside id="edit-preview">
+        <h2>Edit Preview</h2>
+        <canvas id="preview-canvas" width="320" height="180"></canvas>
+      </aside>
+    </main>
+    <footer>
+      <div id="timeline-container">
+        <h2>Timeline</h2>
+        <div id="timeline"></div>
+      </div>
+    </footer>
+  </div>
   <script type="module" src="main.js"></script>
 </body>
 </html>

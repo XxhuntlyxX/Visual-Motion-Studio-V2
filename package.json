@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2/issues"
   },
-  "homepage": "https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2#readme"
+  "homepage": "https://github.com/XxhuntlyxX/Visual-Motion-Studio-V2#readme",
+  "dependencies": {
+    "pixi.js": "^8.9.2"
+  }
 }
