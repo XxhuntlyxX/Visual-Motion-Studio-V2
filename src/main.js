@@ -1,7 +1,5 @@
-// Import PixiJS if using npm (uncomment if using modules)
-// import * as PIXI from 'pixi.js';
-
 let pixiApp;
+let selectedFiles = [];
 
 // Initialize PixiJS in the project window
 function initPixi() {
@@ -16,51 +14,57 @@ function initPixi() {
 
 // Handle media uploads and display file list
 document.getElementById('media-upload').addEventListener('change', function (event) {
+  selectedFiles = Array.from(event.target.files);
   const mediaList = document.getElementById('media-list');
   mediaList.innerHTML = '';
-  for (const file of event.target.files) {
+  let lastImageFile = null;
+  for (const file of selectedFiles) {
     const listItem = document.createElement('li');
     listItem.textContent = file.name;
     mediaList.appendChild(listItem);
-
-    // Auto-preview the first image file
-    if (file.type.startsWith('image/') && mediaList.children.length === 1) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = new Image();
-        img.onload = function () {
-          const previewCanvas = document.getElementById('preview-canvas');
-          const ctx = previewCanvas.getContext('2d');
-          ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-          ctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
-        };
-        img.src = e.target.result;
+    if (file.type.startsWith('image/')) lastImageFile = file;
+  }
+  // Preview the last image file selected
+  if (lastImageFile) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        const previewCanvas = document.getElementById('preview-canvas');
+        const ctx = previewCanvas.getContext('2d');
+        ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
       };
-      reader.readAsDataURL(file);
-    }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(lastImageFile);
   }
 });
 
-// Example: Apply a simple "threshold" effect (rotoscoping-like edge detection)
-function applyRotoscopingEffect(canvas, context) {
-  // Get image data
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    // Simple threshold: if brightness > 128, set to white, else black
-    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-    const val = avg > 128 ? 255 : 0;
-    data[i] = data[i + 1] = data[i + 2] = val;
+// Upload to Project button: add all selected images to PixiJS project window
+document.getElementById('upload-btn').addEventListener('click', function () {
+  if (selectedFiles.length > 0 && pixiApp) {
+    pixiApp.stage.removeChildren();
+    selectedFiles.forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const texture = PIXI.Texture.from(e.target.result);
+          const sprite = new PIXI.Sprite(texture);
+          sprite.width = pixiApp.screen.width;
+          sprite.height = pixiApp.screen.height;
+          pixiApp.stage.addChild(sprite);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
   }
-  context.putImageData(imageData, 0, 0);
-}
+});
 
-// Example: Display selected media in preview and apply effect
+// Optional: Clicking on a file in the list previews and applies the effect
 document.getElementById('media-list').addEventListener('click', function (e) {
   if (e.target.tagName === 'LI') {
-    // Find the file from input by name
-    const input = document.getElementById('media-upload');
-    const file = Array.from(input.files).find(f => f.name === e.target.textContent);
+    const file = selectedFiles.find(f => f.name === e.target.textContent);
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = function (ev) {
@@ -68,11 +72,10 @@ document.getElementById('media-list').addEventListener('click', function (e) {
         img.onload = function () {
           const previewCanvas = document.getElementById('preview-canvas');
           const ctx = previewCanvas.getContext('2d');
-          // Clear and draw image
           ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
           ctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
-          // Apply simple rotoscoping effect
-          applyRotoscopingEffect(previewCanvas, ctx);
+          // Uncomment to apply rotoscoping effect:
+          // applyRotoscopingEffect(previewCanvas, ctx);
         };
         img.src = ev.target.result;
       };
@@ -81,7 +84,19 @@ document.getElementById('media-list').addEventListener('click', function (e) {
   }
 });
 
-// Initialize everything on DOMContentLoaded
+// Example: Simple threshold (rotoscoping-like) effect
+function applyRotoscopingEffect(canvas, context) {
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    const val = avg > 128 ? 255 : 0;
+    data[i] = data[i + 1] = data[i + 2] = val;
+  }
+  context.putImageData(imageData, 0, 0);
+}
+
+// Initialize PixiJS on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
   initPixi();
 });
