@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Graphic Design App with Timeline</title>
+  <title>SortableJS Timeline Integration</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body>
   <div id="container">
     <header>
-      <h1>Graphic Design App</h1>
+      <h1>Advanced Timeline Editor (SortableJS Integration)</h1>
     </header>
     <main>
       <aside id="media-viewer">
         <h2>Media Files</h2>
-        <input type="file" id="media-upload" multiple>
+        <input type="file" id="media-upload" multiple accept="image/*,audio/*,video/*">
         <button id="upload-btn">Upload to Project</button>
         <ul id="media-list"></ul>
         <button id="save-btn">Save Project</button>
@@ -27,13 +28,16 @@
       <aside id="edit-preview">
         <h2>Edit Preview</h2>
         <canvas id="preview-canvas" width="320" height="180"></canvas>
+        <audio id="preview-audio" controls style="width:100%;margin-top:8px;display:none"></audio>
+        <video id="preview-video" controls style="width:100%;margin-top:8px;display:none"></video>
       </aside>
     </main>
     <footer>
-      <div id="timeline-container">
-        <h2>Timeline</h2>
-        <div id="timeline"></div>
+      <div id="timeline-controls">
+        <button id="add-video-track">Add Video Track</button>
+        <button id="add-audio-track">Add Audio Track</button>
       </div>
+      <div id="timeline-tracks"></div>
     </footer>
   </div>
   <script src="main.js"></script>
