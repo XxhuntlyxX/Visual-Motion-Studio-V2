@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Timeline Video Editor</title>
+  <title>Timeline Editor with Resizable Clips and Playhead</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -33,14 +33,6 @@
       <h2>Project Window</h2>
       <div id="pixi-canvas-container"></div>
     </section>
-    <section id="timeline-section">
-      <div id="timeline-controls">
-        <button id="play-btn">▶ Play</button>
-        <button id="pause-btn">⏸ Pause</button>
-        <span id="timeline-meta"></span>
-      </div>
-      <div id="timeline-tracks"></div>
-    </section>
     <aside id="edit-preview">
       <h2>Edit Preview</h2>
       <canvas id="preview-canvas" width="320" height="180"></canvas>
@@ -48,6 +40,18 @@
       <video id="preview-video" controls style="width:100%;margin-top:8px;display:none"></video>
     </aside>
   </div>
+  <section id="timeline-section">
+    <div id="timeline-controls">
+      <button id="play-btn">▶ Play</button>
+      <button id="pause-btn">⏸ Pause</button>
+      <button id="stop-btn">⏹ Stop</button>
+      <span id="timeline-meta"></span>
+    </div>
+    <div id="timeline-holder">
+      <div id="timeline-tracks"></div>
+      <div id="timeline-playhead"></div>
+    </div>
+  </section>
   <div id="timeline-modal" class="modal">
     <div class="modal-content">
       <span class="close" id="close-timeline-modal">&times;</span>
