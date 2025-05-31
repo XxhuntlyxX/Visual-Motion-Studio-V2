@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Timeline Editor with Resizable Clips and Playhead</title>
+  <title>Timeline Editor with Unified Playhead and Project Upload</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -14,6 +14,7 @@
       <div class="dropdown-content">
         <label for="media-upload" class="dropdown-item">Choose Files</label>
         <input type="file" id="media-upload" multiple accept="image/*,audio/*,video/*" style="display:none">
+        <button id="upload-to-project-btn" class="dropdown-item">Upload to Project</button>
         <button id="create-timeline-btn" class="dropdown-item">Create Timeline</button>
         <button id="save-btn" class="dropdown-item">Save Project</button>
         <input type="file" id="load-project-file" accept=".json" style="display:none">
@@ -28,6 +29,7 @@
       <h3>Timelines</h3>
       <ul id="timeline-list"></ul>
       <div id="timeline-settings"></div>
+      <div id="pending-uploads"></div>
     </aside>
     <section id="project-window">
       <h2>Project Window</h2>
@@ -47,9 +49,12 @@
       <button id="stop-btn">⏹ Stop</button>
       <span id="timeline-meta"></span>
     </div>
-    <div id="timeline-holder">
-      <div id="timeline-tracks"></div>
-      <div id="timeline-playhead"></div>
+    <div id="timeline-container">
+      <div id="track-controls-col"></div>
+      <div id="timeline-tracks-col">
+        <div id="timeline-playhead"></div>
+        <!-- Track rows will be rendered here -->
+      </div>
     </div>
   </section>
   <div id="timeline-modal" class="modal">

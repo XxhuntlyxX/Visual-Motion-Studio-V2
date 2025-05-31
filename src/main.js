@@ -1,15 +1,12 @@
-// --- DATA STRUCTURE ---
 let pixiApp;
-let selectedFiles = [];
+let selectedFiles = []; // buffer for pending uploads (not in project until "Upload to Project")
 let projectState = {
-  media: [], // {id, name, type, dataUrl, thumbnail}
-  timelines: [], // [{id, name, codec, fps, width, height, tracks}]
+  media: [],
+  timelines: [],
   activeTimelineId: null
 };
-
 const SECONDS_PER_PIXEL = 0.2;
 
-// --- MENU & MODAL CONTROLS ---
 document.getElementById('create-timeline-btn').onclick = () => {
   document.getElementById('timeline-modal').style.display = 'block';
 };
@@ -71,7 +68,7 @@ function updateTimelineSettings() {
   d.textContent = `Codec: ${t.codec} | FPS: ${t.fps} | Res: ${t.width}x${t.height}`;
 }
 
-// --- PIXI ---
+// ---- PIXI ----
 function initPixi() {
   const container = document.getElementById('pixi-canvas-container');
   pixiApp = new PIXI.Application({
@@ -82,11 +79,15 @@ function initPixi() {
   container.appendChild(pixiApp.view);
 }
 
-// --- MEDIA UPLOAD & THUMBNAILS ---
+// ---- MEDIA UPLOAD/BUFFER ----
 document.getElementById('media-upload').addEventListener('change', e => {
-  const files = Array.from(e.target.files);
+  selectedFiles = Array.from(e.target.files);
+  updatePendingUploads();
+});
+document.getElementById('upload-to-project-btn').addEventListener('click', () => {
+  if (!selectedFiles.length) return;
   let loaded = 0;
-  files.forEach(file => {
+  selectedFiles.forEach(file => {
     const type = getMediaType(file);
     generateThumbnail(file, type, thumb => {
       const reader = new FileReader();
@@ -99,12 +100,26 @@ document.getElementById('media-upload').addEventListener('change', e => {
           thumbnail: thumb
         });
         loaded++;
-        if (loaded === files.length) updateMediaList();
+        if (loaded === selectedFiles.length) {
+          updateMediaList();
+          selectedFiles = [];
+          updatePendingUploads();
+        }
       };
       reader.readAsDataURL(file);
     });
   });
 });
+function updatePendingUploads() {
+  const d = document.getElementById('pending-uploads');
+  if (!selectedFiles.length) {
+    d.innerHTML = '';
+    return;
+  }
+  d.innerHTML = `<strong>Pending Upload:</strong><ul>${
+    selectedFiles.map(f=>`<li>${f.name}</li>`).join('')
+  }</ul>`;
+}
 function generateThumbnail(file, type, cb) {
   if (type === 'image') {
     const reader = new FileReader();
@@ -158,13 +173,12 @@ function updateMediaList() {
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('media-id', media.id);
     };
-    // left-click preview
     li.onclick = () => showPreviewForMedia(media);
     list.appendChild(li);
   });
 }
 
-// --- CONTEXT MENU FOR MEDIA FILES ---
+// ---- CONTEXT MENU ----
 function showContextMenu(e, media) {
   e.preventDefault();
   const menu = document.getElementById('context-menu');
@@ -187,10 +201,8 @@ function showContextMenu(e, media) {
 }
 window.addEventListener('click', hideContextMenu);
 function hideContextMenu() {
-  const menu = document.getElementById('context-menu');
-  menu.style.display = 'none';
+  document.getElementById('context-menu').style.display = 'none';
 }
-
 function addMediaToTrack(media, trackId) {
   const t = getActiveTimeline();
   if (!t) return;
@@ -201,6 +213,11 @@ function addMediaToTrack(media, trackId) {
     const last = track.items[track.items.length-1];
     nextStart = last.start + last.duration;
   }
+  let duration = 5;
+  if (media.type === 'audio' || media.type === 'video') {
+    // Can't get true duration here; could be enhanced to probe via <audio>/<video> if needed
+    duration = 5;
+  }
   track.items.push({
     id: 'clip-'+Date.now()+Math.random(),
     mediaId: media.id,
@@ -208,29 +225,52 @@ function addMediaToTrack(media, trackId) {
     name: media.name,
     src: media.dataUrl,
     start: nextStart,
-    duration: 5,
+    duration: duration,
     thumbnail: media.thumbnail
   });
   updateTimeline();
 }
 
-// --- TIMELINE & TRACKS ---
+// ---- TIMELINE ----
 function updateTimeline() {
   const t = getActiveTimeline();
-  const container = document.getElementById('timeline-tracks');
-  if (!t) { container.innerHTML = '<em>No timeline created.</em>'; return; }
-  container.innerHTML = '';
+  const controlsCol = document.getElementById('track-controls-col');
+  const tracksCol = document.getElementById('timeline-tracks-col');
+  if (!t) {
+    controlsCol.innerHTML = '';
+    tracksCol.innerHTML = '';
+    return;
+  }
+  controlsCol.innerHTML = '';
+  let playheadDiv = document.getElementById('timeline-playhead');
+  if (!playheadDiv) {
+    playheadDiv = document.createElement('div');
+    playheadDiv.id = 'timeline-playhead';
+    tracksCol.appendChild(playheadDiv);
+  }
+  Array.from(tracksCol.children).forEach(child => {
+    if (child.id !== 'timeline-playhead') tracksCol.removeChild(child);
+  });
   t.tracks.forEach((track, trackIdx) => {
-    const row = document.createElement('div');
-    row.className = `timeline-track ${track.type} ${track.enabled === false ? 'disabled' : ''}`;
-    // Track label and controls
-    const label = document.createElement('div');
-    label.className = 'timeline-track-label';
-    label.textContent = `${track.type.toUpperCase()} ${trackIdx + 1}`;
-    const controls = document.createElement('div');
-    controls.className = 'timeline-track-controls';
-    controls.innerHTML = `<button onclick="removeTrack('${track.id}')">Remove</button>`;
-    // Track items container
+    // Controls column
+    const ctrlRow = document.createElement('div');
+    ctrlRow.className = 'track-controls-row';
+    ctrlRow.innerHTML = `
+      <span class="track-label">${track.type.toUpperCase()} ${trackIdx+1}</span>
+      ${track.type === 'audio' ? `
+        <button onclick="toggleMute('${track.id}')">${track.mute ? 'Unmute' : 'Mute'}</button>
+        <button onclick="toggleSolo('${track.id}')">${track.solo ? 'Unsolo' : 'Solo'}</button>
+      ` : ''}
+      ${track.type === 'video' ? `
+        <button onclick="toggleTrack('${track.id}')">${track.enabled === false ? 'Enable' : 'Disable'}</button>
+      ` : ''}
+      <button onclick="removeTrack('${track.id}')">Remove</button>
+    `;
+    controlsCol.appendChild(ctrlRow);
+
+    // Timeline tracks column
+    const trackRow = document.createElement('div');
+    trackRow.className = 'timeline-track-row';
     const items = document.createElement('div');
     items.className = 'timeline-track-items';
     items.id = `track-items-${track.id}`;
@@ -244,7 +284,8 @@ function updateTimeline() {
       block.style.left = (clip.start / SECONDS_PER_PIXEL) + 'px';
       block.setAttribute('data-clip-idx', itemIdx);
       block.setAttribute('data-track-id', track.id);
-      // --- Resize handles
+
+      // Resize handles
       const leftHandle = document.createElement('div');
       leftHandle.className = 'resize-handle left';
       leftHandle.onmousedown = e => startResizeClip(e, track, clip, 'left');
@@ -258,15 +299,12 @@ function updateTimeline() {
         <img src="${clip.thumbnail}" class="timeline-clip-thumbnail">
         <div class="timeline-clip-label">${clip.name}</div>
         <div class="timeline-clip-time">${formatTime(clip.start)} – ${formatTime(clip.start + clip.duration)}</div>
-        <button class="remove-clip-btn" title="Remove">&times;</button>
-      `;
-      // Preview on click (timeline clip = edit preview)
+        <button class="remove-clip-btn" title="Remove">&times;</button>`;
       block.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-clip-btn')) return;
         showPreviewForClip(clip);
         e.stopPropagation();
       });
-      // Remove
       block.querySelector('.remove-clip-btn').onclick = (e) => {
         track.items.splice(itemIdx, 1);
         updateTimeline();
@@ -275,7 +313,6 @@ function updateTimeline() {
       items.appendChild(block);
     });
 
-    // Drag-and-drop from media list
     items.ondragover = e => { e.preventDefault(); items.style.background="#205e99"; };
     items.ondragleave = e => { items.style.background=""; };
     items.ondrop = e => {
@@ -286,44 +323,19 @@ function updateTimeline() {
       if (media) addMediaToTrack(media, track.id);
     };
 
-    row.appendChild(label);
-    row.appendChild(controls);
-    row.appendChild(items);
-    container.appendChild(row);
+    trackRow.appendChild(items);
+    tracksCol.appendChild(trackRow);
   });
 
-  // SortableJS for each track
-  t.tracks.forEach(track => {
-    const el = document.getElementById(`track-items-${track.id}`);
-    if (!el) return;
-    if (el._sortable) el._sortable.destroy();
-    el._sortable = Sortable.create(el, {
-      animation: 150,
-      group: { name: 'timeline', pull: true, put: true },
-      direction: 'horizontal',
-      draggable: '.timeline-clip',
-      onEnd: function (evt) {
-        const track = t.tracks.find(tr => tr.id === el.getAttribute('data-track-id'));
-        if (!track) return;
-        const [moved] = track.items.splice(evt.oldIndex, 1);
-        track.items.splice(evt.newIndex, 0, moved);
-        // Recalculate start times
-        let cur = 0;
-        track.items.forEach(clip => { clip.start = cur; cur += clip.duration; });
-        updateTimeline();
-      }
-    });
-  });
+  // Playhead position
+  const playheadPx = (window.playhead || 0) / SECONDS_PER_PIXEL;
+  playheadDiv.style.left = playheadPx + 'px';
+  playheadDiv.style.height = tracksCol.offsetHeight + 'px';
+  // Make timeline horizontally scrollable for long timelines
+  tracksCol.scrollLeft = Math.max(0, playheadPx - 100);
   updatePlayhead();
 }
-window.removeTrack = function(trackId) {
-  const t = getActiveTimeline();
-  if (!t) return;
-  t.tracks = t.tracks.filter(tr => tr.id !== trackId);
-  updateTimeline();
-};
-
-// --- CLIP RESIZE HANDLES ---
+// ---- CLIP RESIZE HANDLES ----
 let resizing = null;
 function startResizeClip(e, track, clip, which) {
   e.preventDefault();
@@ -332,17 +344,27 @@ function startResizeClip(e, track, clip, which) {
 }
 window.addEventListener('mousemove', e => {
   if (!resizing) return;
-  const t = getActiveTimeline();
   const px = e.clientX - resizing.startX;
   const deltaSec = px * SECONDS_PER_PIXEL;
   if (resizing.which === 'right') {
-    resizing.clip.duration = Math.max(1, resizing.origDuration + deltaSec);
+    if (resizing.clip.type === 'image') {
+      resizing.clip.duration = Math.max(5, Math.min(60, resizing.origDuration + deltaSec));
+    } else {
+      resizing.clip.duration = Math.max(1, resizing.origDuration + deltaSec);
+    }
   } else if (resizing.which === 'left') {
-    const newStart = resizing.origStart + deltaSec;
-    const newDuration = resizing.origDuration - deltaSec;
-    if (newDuration > 1 && newStart >= 0) {
-      resizing.clip.start = newStart;
-      resizing.clip.duration = newDuration;
+    let newStart = resizing.origStart + deltaSec;
+    let newDuration = resizing.origDuration - deltaSec;
+    if (resizing.clip.type === 'image') {
+      if (newDuration >= 5 && newDuration <= 60 && newStart >= 0) {
+        resizing.clip.start = newStart;
+        resizing.clip.duration = newDuration;
+      }
+    } else {
+      if (newDuration >= 1 && newStart >= 0) {
+        resizing.clip.start = newStart;
+        resizing.clip.duration = newDuration;
+      }
     }
   }
   // After resizing, reorder all following clips
@@ -367,9 +389,8 @@ window.addEventListener('mouseup', e => {
   }
 });
 
-// --- PREVIEW LOGIC ---
+// ---- PREVIEW LOGIC ----
 function showPreviewForMedia(media) {
-  // Project window preview ONLY for media files (not timeline clips)
   const img = document.getElementById('pixi-canvas-container');
   img.innerHTML = '';
   if (media.type === 'image') {
@@ -393,7 +414,6 @@ function showPreviewForMedia(media) {
   }
 }
 function showPreviewForClip(clip) {
-  // Timeline clips preview in Edit Preview window
   const img = document.getElementById('preview-canvas');
   const audio = document.getElementById('preview-audio');
   const video = document.getElementById('preview-video');
@@ -422,17 +442,16 @@ function showPreviewForClip(clip) {
   }
 }
 
-// --- PLAYHEAD & CONTROLS ---
+// ---- PLAYHEAD & CONTROLS ----
 let playInterval = null;
 let playhead = 0;
 function updatePlayhead() {
-  const t = getActiveTimeline();
-  if (!t) return;
-  const timelineHolder = document.getElementById('timeline-holder');
+  const tracksCol = document.getElementById('timeline-tracks-col');
   const playheadDiv = document.getElementById('timeline-playhead');
-  const px = playhead / SECONDS_PER_PIXEL;
-  playheadDiv.style.left = px + 'px';
-  playheadDiv.style.height = (timelineHolder.offsetHeight || 100) + 'px';
+  if (tracksCol && playheadDiv) {
+    playheadDiv.style.left = (window.playhead || 0) / SECONDS_PER_PIXEL + 'px';
+    playheadDiv.style.height = tracksCol.offsetHeight + 'px';
+  }
 }
 document.getElementById('play-btn').onclick = () => {
   if (playInterval) return;
@@ -468,10 +487,35 @@ document.getElementById('stop-btn').onclick = () => {
   clearInterval(playInterval);
   playInterval = null;
   playhead = 0;
+  window.playhead = 0;
   updatePlayhead();
 };
 
-// --- PROJECT SAVE/LOAD ---
+window.toggleMute = function(id) {
+  const t = getActiveTimeline();
+  if (!t) return;
+  const track = t.tracks.find(tr => tr.id === id);
+  if (track) { track.mute = !track.mute; updateTimeline(); }
+};
+window.toggleSolo = function(id) {
+  const t = getActiveTimeline();
+  if (!t) return;
+  const track = t.tracks.find(tr => tr.id === id);
+  if (track) { track.solo = !track.solo; updateTimeline(); }
+};
+window.toggleTrack = function(id) {
+  const t = getActiveTimeline();
+  if (!t) return;
+  const track = t.tracks.find(tr => tr.id === id);
+  if (track) { track.enabled = !track.enabled; updateTimeline(); }
+};
+window.removeTrack = function(id) {
+  const t = getActiveTimeline();
+  if (!t) return;
+  t.tracks = t.tracks.filter(tr => tr.id !== id);
+  updateTimeline();
+};
+// ---- PROJECT SAVE/LOAD ----
 document.getElementById('save-btn').addEventListener('click', function () {
   const dataStr = JSON.stringify(projectState);
   const blob = new Blob([dataStr], { type: "application/json" });
@@ -508,8 +552,7 @@ document.getElementById('load-project-file').addEventListener('change', function
     reader.readAsText(file);
   }
 });
-
-// --- INIT ---
+// ---- INIT ----
 document.addEventListener('DOMContentLoaded', () => {
   initPixi();
   updateMediaList();
@@ -517,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTimelineSettings();
   updateTimeline();
   updateTimelineMeta();
+  updatePendingUploads();
   updatePlayhead();
 });
 function formatTime(secs) {
