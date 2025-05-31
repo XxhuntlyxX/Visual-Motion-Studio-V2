@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Timeline Editor v15</title>
+  <title>Timeline Editor with Unified Playhead and Project Upload</title>
   <link rel="stylesheet" href="styles.css">
-  <!-- PIXI.js and Sortable.js can be included if needed in your project -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script> -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body>
   <div id="menu-bar">
@@ -27,6 +26,9 @@
     <aside id="media-viewer">
       <h2>Media Files</h2>
       <ul id="media-list"></ul>
+      <h3>Timelines</h3>
+      <ul id="timeline-list"></ul>
+      <div id="timeline-settings"></div>
       <div id="pending-uploads"></div>
     </aside>
     <section id="project-window">
@@ -36,6 +38,8 @@
     <aside id="edit-preview">
       <h2>Edit Preview</h2>
       <canvas id="preview-canvas" width="320" height="180"></canvas>
+      <audio id="preview-audio" controls style="width:100%;margin-top:8px;display:none"></audio>
+      <video id="preview-video" controls style="width:100%;margin-top:8px;display:none"></video>
     </aside>
   </div>
   <section id="timeline-section">
@@ -49,16 +53,10 @@
       <div id="track-controls-col"></div>
       <div id="timeline-tracks-col">
         <div id="timeline-playhead"></div>
+        <!-- Track rows will be rendered here -->
       </div>
     </div>
-    <ul id="context-menu" class="context-menu"></ul>
-    <ul id="track-panel-context-menu" class="context-menu" style="display:none">
-      <li id="add-video-track-menu">Add Video Track</li>
-      <li id="add-audio-track-menu">Add Audio Track</li>
-      <li id="add-video-audio-track-menu">Add Video + Audio Linked Tracks</li>
-    </ul>
   </section>
-  <!-- Timeline modal for new timelines -->
   <div id="timeline-modal" class="modal">
     <div class="modal-content">
       <span class="close" id="close-timeline-modal">&times;</span>
@@ -72,8 +70,7 @@
       </form>
     </div>
   </div>
-  <ul id="timeline-list"></ul>
-  <div id="timeline-settings"></div>
+  <ul id="context-menu" class="context-menu"></ul>
   <script src="main.js"></script>
 </body>
 </html>

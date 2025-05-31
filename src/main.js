@@ -7,79 +7,6 @@ let projectState = {
 };
 const SECONDS_PER_PIXEL = 0.2;
 
-// --- TRACK CONTEXT MENU ---
-function addTrackContextMenuSetup() {
-  // Create context menu only once
-  let menu = document.getElementById('track-panel-context-menu');
-  if (!menu) {
-    menu = document.createElement('ul');
-    menu.id = 'track-panel-context-menu';
-    menu.className = 'context-menu';
-    menu.style.display = 'none';
-    menu.innerHTML = `
-      <li id="add-video-track-menu">Add Video Track</li>
-      <li id="add-audio-track-menu">Add Audio Track</li>
-      <li id="add-video-audio-track-menu">Add Video + Audio Linked Tracks</li>
-    `;
-    document.body.appendChild(menu);
-  }
-  // Row index for insertion
-  let lastRowIdx = null;
-  // Show menu on right-click
-  document.getElementById('track-controls-col').addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-    let targetRow = e.target.closest('.track-controls-row');
-    lastRowIdx = targetRow ? Array.from(this.children).indexOf(targetRow) : null;
-    menu.style.display = 'block';
-    menu.style.left = `${e.pageX}px`;
-    menu.style.top = `${e.pageY}px`;
-  });
-  // Hide menu on click elsewhere
-  document.addEventListener('mousedown', (e) => {
-    if (!menu.contains(e.target)) menu.style.display = 'none';
-  });
-  // Add track handlers
-  menu.querySelector('#add-video-track-menu').onclick = () => {
-    menu.style.display = 'none'; addTrackAtContext('video', lastRowIdx);
-  };
-  menu.querySelector('#add-audio-track-menu').onclick = () => {
-    menu.style.display = 'none'; addTrackAtContext('audio', lastRowIdx);
-  };
-  menu.querySelector('#add-video-audio-track-menu').onclick = () => {
-    menu.style.display = 'none'; addTrackAtContext('linked', lastRowIdx);
-  };
-}
-function addTrackAtContext(type, rowIdx) {
-  const t = getActiveTimeline();
-  if (!t) return;
-  let insertIdx = (rowIdx == null || isNaN(rowIdx)) ? t.tracks.length : rowIdx;
-  if (type === 'video') {
-    t.tracks.splice(insertIdx, 0, {id: 'track-'+Date.now()+'-v', type: 'video', enabled: true, items: []});
-  } else if (type === 'audio') {
-    t.tracks.splice(insertIdx, 0, {id: 'track-'+Date.now()+'-a', type: 'audio', enabled: true, items: []});
-  } else if (type === 'linked') {
-    const groupId = 'linked-'+Date.now()+Math.floor(Math.random()*1000);
-    t.tracks.splice(insertIdx, 0, {
-      id: 'track-'+Date.now()+'-a',
-      type: 'audio',
-      enabled: true,
-      items: [],
-      linkedGroup: groupId,
-      linkedRole: 'audio'
-    });
-    t.tracks.splice(insertIdx+1, 0, {
-      id: 'track-'+Date.now()+'-v',
-      type: 'video',
-      enabled: true,
-      items: [],
-      linkedGroup: groupId,
-      linkedRole: 'video'
-    });
-  }
-  updateTimeline();
-}
-
-// --- TIMELINE CREATION & META ---
 document.getElementById('create-timeline-btn').onclick = () => {
   document.getElementById('timeline-modal').style.display = 'block';
 };
@@ -251,7 +178,7 @@ function updateMediaList() {
   });
 }
 
-// ---- CONTEXT MENU (MEDIA) ----
+// ---- CONTEXT MENU ----
 function showContextMenu(e, media) {
   e.preventDefault();
   const menu = document.getElementById('context-menu');
@@ -288,6 +215,7 @@ function addMediaToTrack(media, trackId) {
   }
   let duration = 5;
   if (media.type === 'audio' || media.type === 'video') {
+    // Can't get true duration here; could be enhanced to probe via <audio>/<video> if needed
     duration = 5;
   }
   track.items.push({
@@ -327,9 +255,8 @@ function updateTimeline() {
     // Controls column
     const ctrlRow = document.createElement('div');
     ctrlRow.className = 'track-controls-row';
-    if (track.linkedGroup) ctrlRow.classList.add('linked');
     ctrlRow.innerHTML = `
-      <span class="track-label">${track.type.toUpperCase()} ${trackIdx+1}${track.linkedGroup && track.linkedRole==='video' ? ' 🎞️' : (track.linkedGroup && track.linkedRole==='audio' ? ' 🎵' : '')}</span>
+      <span class="track-label">${track.type.toUpperCase()} ${trackIdx+1}</span>
       ${track.type === 'audio' ? `
         <button onclick="toggleMute('${track.id}')">${track.mute ? 'Unmute' : 'Mute'}</button>
         <button onclick="toggleSolo('${track.id}')">${track.solo ? 'Unsolo' : 'Solo'}</button>
@@ -344,7 +271,6 @@ function updateTimeline() {
     // Timeline tracks column
     const trackRow = document.createElement('div');
     trackRow.className = 'timeline-track-row';
-    if (track.linkedGroup) trackRow.classList.add('linked');
     const items = document.createElement('div');
     items.className = 'timeline-track-items';
     items.id = `track-items-${track.id}`;
@@ -405,6 +331,7 @@ function updateTimeline() {
   const playheadPx = (window.playhead || 0) / SECONDS_PER_PIXEL;
   playheadDiv.style.left = playheadPx + 'px';
   playheadDiv.style.height = tracksCol.offsetHeight + 'px';
+  // Make timeline horizontally scrollable for long timelines
   tracksCol.scrollLeft = Math.max(0, playheadPx - 100);
   updatePlayhead();
 }
@@ -490,8 +417,8 @@ function showPreviewForClip(clip) {
   const img = document.getElementById('preview-canvas');
   const audio = document.getElementById('preview-audio');
   const video = document.getElementById('preview-video');
-  if (audio) audio.style.display = "none";
-  if (video) video.style.display = "none";
+  audio.style.display = "none";
+  video.style.display = "none";
   if (clip.type === 'image') {
     const i = new window.Image();
     i.onload = function () {
@@ -500,13 +427,13 @@ function showPreviewForClip(clip) {
       ctx.drawImage(i, 0, 0, img.width, img.height);
     };
     i.src = clip.src;
-  } else if (clip.type === 'audio' && audio) {
+  } else if (clip.type === 'audio') {
     audio.src = clip.src;
     audio.style.display = "block";
     audio.play();
     const ctx = img.getContext('2d');
     ctx.clearRect(0, 0, img.width, img.height);
-  } else if (clip.type === 'video' && video) {
+  } else if (clip.type === 'video') {
     video.src = clip.src;
     video.style.display = "block";
     video.play();
@@ -635,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTimelineMeta();
   updatePendingUploads();
   updatePlayhead();
-  addTrackContextMenuSetup();
 });
 function formatTime(secs) {
   const m = Math.floor(secs / 60);
