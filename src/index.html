@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Timeline Editor</title>
+  <title>Timeline Editor v15</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- PIXI.js and Sortable.js can be included if needed in your project -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.0.2/pixi.min.js"></script> -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script> -->
 </head>
 <body>
   <div id="menu-bar">
@@ -13,6 +16,10 @@
         <label for="media-upload" class="dropdown-item">Choose Files</label>
         <input type="file" id="media-upload" multiple accept="image/*,audio/*,video/*" style="display:none">
         <button id="upload-to-project-btn" class="dropdown-item">Upload to Project</button>
+        <button id="create-timeline-btn" class="dropdown-item">Create Timeline</button>
+        <button id="save-btn" class="dropdown-item">Save Project</button>
+        <input type="file" id="load-project-file" accept=".json" style="display:none">
+        <label for="load-project-file" class="dropdown-item">Load Project</label>
       </div>
     </div>
   </div>
@@ -32,15 +39,41 @@
     </aside>
   </div>
   <section id="timeline-section">
+    <div id="timeline-controls">
+      <button id="play-btn">▶ Play</button>
+      <button id="pause-btn">⏸ Pause</button>
+      <button id="stop-btn">⏹ Stop</button>
+      <span id="timeline-meta"></span>
+    </div>
     <div id="timeline-container">
       <div id="track-controls-col"></div>
       <div id="timeline-tracks-col">
         <div id="timeline-playhead"></div>
       </div>
     </div>
+    <ul id="context-menu" class="context-menu"></ul>
+    <ul id="track-panel-context-menu" class="context-menu" style="display:none">
+      <li id="add-video-track-menu">Add Video Track</li>
+      <li id="add-audio-track-menu">Add Audio Track</li>
+      <li id="add-video-audio-track-menu">Add Video + Audio Linked Tracks</li>
+    </ul>
   </section>
-  <!-- Right-click menu for track panel -->
-  <ul id="track-panel-context-menu" class="context-menu"></ul>
+  <!-- Timeline modal for new timelines -->
+  <div id="timeline-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="close-timeline-modal">&times;</span>
+      <h2>Create Timeline</h2>
+      <form id="timeline-form">
+        <label>Name: <input type="text" id="timeline-name" required></label><br>
+        <label>Codec: <input type="text" id="timeline-codec" value="H.264"></label><br>
+        <label>FPS: <input type="number" id="timeline-fps" value="30"></label><br>
+        <label>Resolution: <input type="number" id="timeline-width" value="1280"> x <input type="number" id="timeline-height" value="720"></label><br>
+        <button type="submit">Create</button>
+      </form>
+    </div>
+  </div>
+  <ul id="timeline-list"></ul>
+  <div id="timeline-settings"></div>
   <script src="main.js"></script>
 </body>
 </html>

@@ -9,10 +9,15 @@ body { font-family: Arial, sans-serif; background: #181a1b; color: #ededed; marg
 #media-viewer { flex: 0 0 200px; background: #212325; border-radius: 8px; padding: 12px; }
 #media-list { list-style: none; padding: 0; margin: 0 0 10px 0; max-height: 160px; overflow-y: auto; }
 #media-list li { background: #23272b; margin-bottom: 4px; padding: 6px 8px; border-radius: 5px; display: flex; align-items: center; cursor: pointer; }
+.media-thumb { width: 40px; height: 40px; object-fit: cover; background: #333; margin-right: 8px; border-radius: 3px; }
 #pending-uploads { color: #aad5ff; font-size: 0.95em; }
 #project-window, #edit-preview { flex: 1 1 0; min-width: 200px; background: #212325; border-radius: 8px; padding: 12px; }
 #pixi-canvas-container { width: 100%; min-height: 120px; background: #191b1c; border-radius: 10px; border: 1px solid #313338; }
 #timeline-section { width: 100%; max-width: 1200px; margin: 24px auto 0 auto; }
+#timeline-controls { margin-bottom: 8px; }
+#timeline-controls button { background: #3087e1; color: #fff; border: none; border-radius: 5px; margin-right: 5px; font-size: 1em; padding: 7px 16px; cursor: pointer; transition: background 0.2s;}
+#timeline-controls button:hover { background: #205e99;}
+#timeline-meta { font-size: 1em; color: #aad5ff; }
 #timeline-container { display: flex; flex-direction: row; position: relative; min-height: 140px; background: #23272b; border-radius: 8px; margin-top: 10px; border: 1px solid #313338; overflow-x: auto; }
 #track-controls-col { display: flex; flex-direction: column; min-width: 160px; background: #222; border-radius: 8px 0 0 8px; border-right: 1px solid #313338; z-index: 2; }
 .track-controls-row { display: flex; align-items: center; min-height: 40px; padding: 0 8px; border-bottom: 1px solid #282a2d; position: relative; cursor: pointer; }
@@ -26,3 +31,8 @@ body { font-family: Arial, sans-serif; background: #181a1b; color: #ededed; marg
 .context-menu { position: absolute; background: #23272b; border-radius: 6px; padding: 6px 0; min-width: 180px; display: none; z-index: 9999; box-shadow: 0 4px 16px #0005; list-style: none; }
 .context-menu li { padding: 7px 20px; cursor: pointer; color: #fff; font-size: 1em; }
 .context-menu li:hover { background: #3087e1; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5);}
+.modal-content { background: #23272b; border-radius: 10px; padding: 30px 24px 20px 24px; margin: 100px auto; width: 340px; color: #fff; position: relative;}
+.close { color: #fff; position: absolute; right: 16px; top: 10px; font-size: 28px; cursor: pointer;}
+::-webkit-scrollbar { width: 10px; background: #212325;}
+::-webkit-scrollbar-thumb { background: #313338; border-radius: 10px;}
