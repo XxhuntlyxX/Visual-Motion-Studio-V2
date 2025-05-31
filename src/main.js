@@ -1,13 +1,104 @@
-// ...other code and data structures unchanged...
-
-let pixiApp;
+// --- DATA MODEL ---
 let selectedFiles = [];
 let projectState = {
   media: [],
-  timelines: [],
-  activeTimelineId: null
+  timelines: [
+    {
+      id: 'timeline1',
+      name: 'Timeline 1',
+      tracks: [],
+    }
+  ],
+  activeTimelineId: 'timeline1'
 };
 const SECONDS_PER_PIXEL = 0.2;
+
+// --- MEDIA UPLOAD ---
+document.getElementById('media-upload').addEventListener('change', e => {
+  selectedFiles = Array.from(e.target.files);
+  updatePendingUploads();
+});
+document.getElementById('upload-to-project-btn').addEventListener('click', () => {
+  if (!selectedFiles.length) return;
+  let loaded = 0;
+  selectedFiles.forEach(file => {
+    const type = getMediaType(file);
+    generateThumbnail(file, type, thumb => {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        projectState.media.push({
+          id: 'media-'+Date.now()+Math.random(),
+          name: file.name,
+          type,
+          dataUrl: ev.target.result,
+          thumbnail: thumb
+        });
+        loaded++;
+        if (loaded === selectedFiles.length) {
+          updateMediaList();
+          selectedFiles = [];
+          updatePendingUploads();
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+});
+function updatePendingUploads() {
+  const d = document.getElementById('pending-uploads');
+  if (!selectedFiles.length) {
+    d.innerHTML = '';
+    return;
+  }
+  d.innerHTML = `<strong>Pending Upload:</strong><ul>${
+    selectedFiles.map(f=>`<li>${f.name}</li>`).join('')
+  }</ul>`;
+}
+function getMediaType(file) {
+  if (file.type) {
+    if (file.type.startsWith('image/')) return 'image';
+    if (file.type.startsWith('video/')) return 'video';
+    if (file.type.startsWith('audio/')) return 'audio';
+  }
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (['jpg','jpeg','png','gif','bmp','webp'].includes(ext)) return 'image';
+  if (['mp4','mov','avi','webm'].includes(ext)) return 'video';
+  if (['mp3','wav','ogg'].includes(ext)) return 'audio';
+  return 'other';
+}
+function generateThumbnail(file, type, cb) {
+  if (type === 'image') {
+    const reader = new FileReader();
+    reader.onload = (e) => cb(e.target.result);
+    reader.readAsDataURL(file);
+  } else if (type === 'video') {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url;
+    video.currentTime = 0.1;
+    video.addEventListener('loadeddata', function () {
+      const canvas = document.createElement('canvas');
+      canvas.width = 80;
+      canvas.height = 48;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, 80, 48);
+      cb(canvas.toDataURL());
+      URL.revokeObjectURL(url);
+    }, {once: true});
+    video.load();
+  } else if (type === 'audio') {
+    cb('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#3ba845"/><text x="24" y="32" text-anchor="middle" font-size="32" fill="#fff">🎵</text></svg>');
+  }
+}
+function updateMediaList() {
+  const list = document.getElementById('media-list');
+  list.innerHTML = '';
+  projectState.media.forEach(media => {
+    const li = document.createElement('li');
+    li.textContent = media.name;
+    list.appendChild(li);
+  });
+}
 
 // --- TRACK CONTEXT MENU ---
 const trackPanelContextMenu = document.getElementById('track-panel-context-menu');
@@ -16,7 +107,7 @@ trackPanelContextMenu.innerHTML = `
   <li id="add-audio-track-menu">Add Audio Track</li>
   <li id="add-video-audio-track-menu">Add Video + Audio Linked Tracks</li>
 `;
-// Helper to find which track row was right-clicked
+// Find the row index clicked
 function getTrackIdxFromControlsRow(row) {
   const controlsCol = document.getElementById('track-controls-col');
   return Array.from(controlsCol.children).indexOf(row);
@@ -72,8 +163,10 @@ function addTrackAtContext(type) {
   updateTimeline();
 }
 
-// ...rest of your main.js (unchanged until updateTimeline)...
-
+// --- Timeline Rendering ---
+function getActiveTimeline() {
+  return projectState.timelines.find(t=>t.id===projectState.activeTimelineId);
+}
 function updateTimeline() {
   const t = getActiveTimeline();
   const controlsCol = document.getElementById('track-controls-col');
@@ -101,18 +194,10 @@ function updateTimeline() {
     if (track.linkedGroup) ctrlRow.classList.add('linked');
     ctrlRow.innerHTML = `
       <span class="track-label">${track.type.toUpperCase()} ${trackIdx+1}${track.linkedGroup && track.linkedRole==='video' ? ' 🎞️' : (track.linkedGroup && track.linkedRole==='audio' ? ' 🎵' : '')}</span>
-      ${track.type === 'audio' ? `
-        <button onclick="toggleMute('${track.id}')">${track.mute ? 'Unmute' : 'Mute'}</button>
-        <button onclick="toggleSolo('${track.id}')">${track.solo ? 'Unsolo' : 'Solo'}</button>
-      ` : ''}
-      ${track.type === 'video' ? `
-        <button onclick="toggleTrack('${track.id}')">${track.enabled === false ? 'Enable' : 'Disable'}</button>
-      ` : ''}
-      <button onclick="removeTrack('${track.id}')">Remove</button>
     `;
     controlsCol.appendChild(ctrlRow);
 
-    // Timeline tracks column
+    // Timeline tracks (just empty rows for demo)
     const trackRow = document.createElement('div');
     trackRow.className = 'timeline-track-row';
     if (track.linkedGroup) trackRow.classList.add('linked');
@@ -120,113 +205,19 @@ function updateTimeline() {
     items.className = 'timeline-track-items';
     items.id = `track-items-${track.id}`;
     items.setAttribute('data-track-id', track.id);
-    track.items.forEach((clip, itemIdx) => {
-      const width = clip.duration / SECONDS_PER_PIXEL;
-      const block = document.createElement('div');
-      block.className = `timeline-clip ${track.type}`;
-      block.style.width = width + 'px';
-      block.style.left = (clip.start / SECONDS_PER_PIXEL) + 'px';
-      block.setAttribute('data-clip-idx', itemIdx);
-      block.setAttribute('data-track-id', track.id);
-      const leftHandle = document.createElement('div');
-      leftHandle.className = 'resize-handle left';
-      leftHandle.onmousedown = e => startResizeClip(e, track, clip, 'left');
-      block.appendChild(leftHandle);
-      const rightHandle = document.createElement('div');
-      rightHandle.className = 'resize-handle right';
-      rightHandle.onmousedown = e => startResizeClip(e, track, clip, 'right');
-      block.appendChild(rightHandle);
-      block.innerHTML += `
-        <img src="${clip.thumbnail}" class="timeline-clip-thumbnail">
-        <div class="timeline-clip-label">${clip.name}</div>
-        <div class="timeline-clip-time">${formatTime(clip.start)} – ${formatTime(clip.start + clip.duration)}</div>
-        <button class="remove-clip-btn" title="Remove">&times;</button>`;
-      block.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-clip-btn')) return;
-        showPreviewForClip(clip);
-        e.stopPropagation();
-      });
-      block.querySelector('.remove-clip-btn').onclick = (e) => {
-        track.items.splice(itemIdx, 1);
-        updateTimeline();
-        e.stopPropagation();
-      };
-      items.appendChild(block);
-    });
-    items.ondragover = e => { e.preventDefault(); items.style.background="#205e99"; };
-    items.ondragleave = e => { items.style.background=""; };
-    items.ondrop = e => {
-      e.preventDefault();
-      items.style.background="";
-      const mediaId = e.dataTransfer.getData('media-id');
-      const media = projectState.media.find(m => m.id === mediaId);
-      if (media) addMediaToTrack(media, track.id);
-    };
-
     trackRow.appendChild(items);
     tracksCol.appendChild(trackRow);
   });
 
   // Playhead position
-  const playheadPx = (window.playhead || 0) / SECONDS_PER_PIXEL;
+  const playheadPx = 0;
   playheadDiv.style.left = playheadPx + 'px';
   playheadDiv.style.height = tracksCol.offsetHeight + 'px';
-  tracksCol.scrollLeft = Math.max(0, playheadPx - 100);
-  updatePlayhead();
 }
 
-// --- Linked Media Addition for Linked Video+Audio Tracks ---
-function addMediaToTrack(media, trackId) {
-  const t = getActiveTimeline();
-  if (!t) return;
-  const track = t.tracks.find(tr => tr.id === trackId);
-  if (!track) return;
-  let nextStart = 0;
-  if (track.items.length > 0) {
-    const last = track.items[track.items.length-1];
-    nextStart = last.start + last.duration;
-  }
-  let duration = 5;
-  if (media.type === 'audio' || media.type === 'video') duration = 5;
-  if (media.type === 'video' && track.linkedGroup && track.linkedRole === 'video') {
-    // add video part to this track
-    track.items.push({
-      id: 'clip-'+Date.now()+Math.random(),
-      mediaId: media.id,
-      type: 'video',
-      name: media.name,
-      src: media.dataUrl,
-      start: nextStart,
-      duration: duration,
-      thumbnail: media.thumbnail
-    });
-    // find linked audio track (immediately above)
-    const groupIdx = t.tracks.indexOf(track);
-    if (groupIdx > 0 && t.tracks[groupIdx-1].linkedGroup === track.linkedGroup && t.tracks[groupIdx-1].linkedRole === 'audio') {
-      t.tracks[groupIdx-1].items.push({
-        id: 'clip-'+Date.now()+Math.random(),
-        mediaId: media.id,
-        type: 'audio',
-        name: media.name + " (audio)",
-        src: media.dataUrl, // in real app, use actual audio only
-        start: nextStart,
-        duration: duration,
-        thumbnail: '' // set a generic audio icon if needed
-      });
-    }
-  } else {
-    track.items.push({
-      id: 'clip-'+Date.now()+Math.random(),
-      mediaId: media.id,
-      type: media.type,
-      name: media.name,
-      src: media.dataUrl,
-      start: nextStart,
-      duration: duration,
-      thumbnail: media.thumbnail
-    });
-  }
+// --- INIT ---
+document.addEventListener('DOMContentLoaded', () => {
+  updateMediaList();
   updateTimeline();
-}
-
-// ...rest of your code (unchanged)...
+  updatePendingUploads();
+});
