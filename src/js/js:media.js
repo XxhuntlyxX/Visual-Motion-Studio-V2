@@ -1,5 +1,6 @@
 import { addMedia, getSelectedFiles, setSelectedFiles, clearSelectedFiles, projectState } from './state.js';
 import { getMediaType } from './utils.js';
+import { addMediaToTrack, getActiveTimeline, updateTimeline } from './timeline.js';
 
 export function setupMediaUpload(updatePendingUploads, updateMediaList, showPreviewForMedia) {
   document.getElementById('media-upload').addEventListener('change', e => {
@@ -7,10 +8,10 @@ export function setupMediaUpload(updatePendingUploads, updateMediaList, showPrev
     updatePendingUploads();
   });
   document.getElementById('upload-to-project-btn').addEventListener('click', () => {
-    const selectedFiles = getSelectedFiles();
-    if (!selectedFiles.length) return;
+    const files = getSelectedFiles();
+    if (!files.length) return;
     let loaded = 0;
-    selectedFiles.forEach(file => {
+    files.forEach(file => {
       const type = getMediaType(file);
       generateThumbnail(file, type, thumb => {
         const reader = new FileReader();
@@ -23,7 +24,7 @@ export function setupMediaUpload(updatePendingUploads, updateMediaList, showPrev
             thumbnail: thumb
           });
           loaded++;
-          if (loaded === selectedFiles.length) {
+          if (loaded === files.length) {
             updateMediaList(showPreviewForMedia);
             clearSelectedFiles();
             updatePendingUploads();
@@ -81,10 +82,51 @@ export function updateMediaList(showPreviewForMedia) {
     li.appendChild(document.createTextNode(media.name));
     li.setAttribute('draggable', 'true');
     li.dataset.mediaId = media.id;
+
+    // Right-click context menu: Add to track
+    li.oncontextmenu = e => {
+      e.preventDefault();
+      showMediaContextMenu(e, media);
+    };
+
+    // Drag and drop
+    li.ondragstart = e => {
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('media-id', media.id);
+    };
+
     li.onclick = () => showPreviewForMedia(media);
     list.appendChild(li);
   });
 }
+
+// Show context menu for media item (add to tracks)
+function showMediaContextMenu(e, media) {
+  let menu = document.getElementById('context-menu');
+  menu.innerHTML = '';
+  const t = getActiveTimeline();
+  if (t) {
+    t.tracks.forEach(track => {
+      const option = document.createElement('li');
+      option.textContent = `Add to ${track.type.toUpperCase()} Track`;
+      option.onclick = () => {
+        addMediaToTrack(media, track.id);
+        hideContextMenu();
+        updateTimeline();
+      };
+      menu.appendChild(option);
+    });
+  }
+  menu.style.display = 'block';
+  menu.style.left = `${e.pageX}px`;
+  menu.style.top = `${e.pageY}px`;
+}
+window.addEventListener('click', hideContextMenu);
+function hideContextMenu() {
+  let menu = document.getElementById('context-menu');
+  if (menu) menu.style.display = 'none';
+}
+
 export function showPreviewForMedia(media) {
   const img = document.getElementById('pixi-canvas-container');
   img.innerHTML = '';

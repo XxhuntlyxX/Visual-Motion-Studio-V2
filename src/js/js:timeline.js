@@ -1,6 +1,5 @@
 import { projectState, getActiveTimeline, SECONDS_PER_PIXEL } from './state.js';
 import { formatTime } from './utils.js';
-import { showPreviewForMedia } from './media.js';
 
 export function updateTimelineMeta() {
   const t = getActiveTimeline();
@@ -33,26 +32,12 @@ export function updateTimelineSettings() {
   d.textContent = `Codec: ${t.codec} | FPS: ${t.fps} | Res: ${t.width}x${t.height}`;
 }
 
-// ---- Context menu for right-click in track area ----
+// --- Track area context menu setup ---
 export function setupTrackPanelContextMenu(updateTimeline) {
-  const tracksCol = document.getElementById('timeline-tracks-col');
-  const menu = createTrackPanelContextMenu(updateTimeline);
-
-  tracksCol.addEventListener('contextmenu', function(e) {
-    // Only right click on empty area, not on clips
-    if (e.target.classList.contains('timeline-track-items') || e.target.id === 'timeline-tracks-col') {
-      e.preventDefault();
-      menu.style.display = "block";
-      menu.style.left = `${e.pageX}px`;
-      menu.style.top = `${e.pageY}px`;
-    }
-  });
-  document.body.addEventListener('click', () => { menu.style.display = "none"; });
-}
-
-function createTrackPanelContextMenu(updateTimeline) {
+  // Remove old menu if any
   let menu = document.getElementById('track-panel-context-menu');
-  if (menu) return menu;
+  if (menu) menu.remove();
+
   menu = document.createElement('ul');
   menu.id = 'track-panel-context-menu';
   menu.className = 'context-menu';
@@ -79,7 +64,24 @@ function createTrackPanelContextMenu(updateTimeline) {
     updateTimeline();
     menu.style.display = "none";
   };
-  return menu;
+
+  // Context menu handler (fires on empty area of track timeline)
+  const tracksCol = document.getElementById('timeline-tracks-col');
+  tracksCol.addEventListener('contextmenu', function(e) {
+    // Only trigger if right-click target is the tracks container or empty spot (not a clip!)
+    if (
+      e.target === tracksCol ||
+      e.target.classList.contains('timeline-track-row') ||
+      e.target.classList.contains('timeline-track-items')
+    ) {
+      e.preventDefault();
+      menu.style.display = "block";
+      menu.style.left = `${e.pageX}px`;
+      menu.style.top = `${e.pageY}px`;
+    }
+  });
+  // Hide on click elsewhere
+  document.body.addEventListener('click', () => { menu.style.display = "none"; });
 }
 
 function addTrack(type) {
@@ -143,11 +145,11 @@ export function updateTimeline() {
       // Resize handles
       const leftHandle = document.createElement('div');
       leftHandle.className = 'resize-handle left';
-      leftHandle.onmousedown = e => startResizeClip(e, track, clip, 'left');
+      // Place your resizing handler here!
       block.appendChild(leftHandle);
       const rightHandle = document.createElement('div');
       rightHandle.className = 'resize-handle right';
-      rightHandle.onmousedown = e => startResizeClip(e, track, clip, 'right');
+      // Place your resizing handler here!
       block.appendChild(rightHandle);
 
       block.innerHTML += `
@@ -157,7 +159,7 @@ export function updateTimeline() {
         <button class="remove-clip-btn" title="Remove">&times;</button>`;
       block.addEventListener('click', (e) => {
         if (e.target.classList.contains('remove-clip-btn')) return;
-        showPreviewForClip(clip);
+        // Optionally handle preview of this clip
         e.stopPropagation();
       });
       block.querySelector('.remove-clip-btn').onclick = (e) => {
@@ -168,6 +170,7 @@ export function updateTimeline() {
       items.appendChild(block);
     });
 
+    // Drag/drop
     items.ondragover = e => { e.preventDefault(); items.style.background="#205e99"; };
     items.ondragleave = e => { items.style.background=""; };
     items.ondrop = e => {
@@ -187,10 +190,9 @@ export function updateTimeline() {
   playheadDiv.style.left = playheadPx + 'px';
   playheadDiv.style.height = tracksCol.offsetHeight + 'px';
   tracksCol.scrollLeft = Math.max(0, playheadPx - 100);
-  // updatePlayhead(); // call from controls.js if needed
 }
 
-// Helper: add media to track (used on drop/context)
+// Helper so media.js can call this
 export function addMediaToTrack(media, trackId) {
   const t = getActiveTimeline();
   if (!t) return;
@@ -216,8 +218,4 @@ export function addMediaToTrack(media, trackId) {
     thumbnail: media.thumbnail
   });
   updateTimeline();
-}
-
-export function showPreviewForClip(clip) {
-  // Add your preview logic here if you want, or call media.js functions.
 }
