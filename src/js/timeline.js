@@ -1,40 +1,8 @@
 import { projectState, getActiveTimeline, SECONDS_PER_PIXEL } from './state.js';
 import { formatTime } from './utils.js';
 
-export function updateTimelineMeta() {
-  const t = getActiveTimeline();
-  if (t) {
-    document.getElementById('timeline-meta').textContent =
-      `${t.name} | ${t.codec} | ${t.fps} FPS | ${t.width}x${t.height}`;
-  }
-}
-export function updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta) {
-  const list = document.getElementById('timeline-list');
-  list.innerHTML = '';
-  projectState.timelines.forEach(t => {
-    const li = document.createElement('li');
-    li.textContent = t.name;
-    li.className = t.id === projectState.activeTimelineId ? 'selected' : '';
-    li.onclick = () => {
-      projectState.activeTimelineId = t.id;
-      updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta);
-      updateTimelineSettings();
-      updateTimeline();
-      updateTimelineMeta();
-    };
-    list.appendChild(li);
-  });
-}
-export function updateTimelineSettings() {
-  const t = getActiveTimeline();
-  const d = document.getElementById('timeline-settings');
-  if (!t) { d.textContent = ''; return; }
-  d.textContent = `Codec: ${t.codec} | FPS: ${t.fps} | Res: ${t.width}x${t.height}`;
-}
-
-// --- Track area context menu setup ---
+// --- Context menu for adding tracks ---
 export function setupTrackPanelContextMenu(updateTimeline) {
-  // Remove old menu if any
   let menu = document.getElementById('track-panel-context-menu');
   if (menu) menu.remove();
 
@@ -91,6 +59,36 @@ function addTrack(type) {
   t.tracks.push({ id, type, enabled: true, items: [] });
 }
 
+export function updateTimelineMeta() {
+  const t = getActiveTimeline();
+  if (t) {
+    document.getElementById('timeline-meta').textContent =
+      `${t.name} | ${t.codec} | ${t.fps} FPS | ${t.width}x${t.height}`;
+  }
+}
+export function updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta) {
+  const list = document.getElementById('timeline-list');
+  list.innerHTML = '';
+  projectState.timelines.forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = t.name;
+    li.className = t.id === projectState.activeTimelineId ? 'selected' : '';
+    li.onclick = () => {
+      projectState.activeTimelineId = t.id;
+      updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta);
+      updateTimelineSettings();
+      updateTimeline();
+      updateTimelineMeta();
+    };
+    list.appendChild(li);
+  });
+}
+export function updateTimelineSettings() {
+  const t = getActiveTimeline();
+  const d = document.getElementById('timeline-settings');
+  if (!t) { d.textContent = ''; return; }
+  d.textContent = `Codec: ${t.codec} | FPS: ${t.fps} | Res: ${t.width}x${t.height}`;
+}
 export function updateTimeline() {
   const t = getActiveTimeline();
   const controlsCol = document.getElementById('track-controls-col');
@@ -145,11 +143,9 @@ export function updateTimeline() {
       // Resize handles
       const leftHandle = document.createElement('div');
       leftHandle.className = 'resize-handle left';
-      // Place your resizing handler here!
       block.appendChild(leftHandle);
       const rightHandle = document.createElement('div');
       rightHandle.className = 'resize-handle right';
-      // Place your resizing handler here!
       block.appendChild(rightHandle);
 
       block.innerHTML += `
@@ -170,7 +166,7 @@ export function updateTimeline() {
       items.appendChild(block);
     });
 
-    // Drag/drop
+    // Drag/drop support
     items.ondragover = e => { e.preventDefault(); items.style.background="#205e99"; };
     items.ondragleave = e => { items.style.background=""; };
     items.ondrop = e => {
@@ -192,7 +188,7 @@ export function updateTimeline() {
   tracksCol.scrollLeft = Math.max(0, playheadPx - 100);
 }
 
-// Helper so media.js can call this
+// Helper for media.js
 export function addMediaToTrack(media, trackId) {
   const t = getActiveTimeline();
   if (!t) return;

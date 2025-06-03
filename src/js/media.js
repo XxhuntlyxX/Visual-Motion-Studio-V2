@@ -2,6 +2,7 @@ import { addMedia, getSelectedFiles, setSelectedFiles, clearSelectedFiles, proje
 import { getMediaType } from './utils.js';
 import { addMediaToTrack, getActiveTimeline, updateTimeline } from './timeline.js';
 
+// Setup media upload handlers
 export function setupMediaUpload(updatePendingUploads, updateMediaList, showPreviewForMedia) {
   document.getElementById('media-upload').addEventListener('change', e => {
     setSelectedFiles(Array.from(e.target.files));
@@ -35,6 +36,8 @@ export function setupMediaUpload(updatePendingUploads, updateMediaList, showPrev
     });
   });
 }
+
+// Generate thumbnail for media file
 export function generateThumbnail(file, type, cb) {
   if (type === 'image') {
     const reader = new FileReader();
@@ -59,6 +62,8 @@ export function generateThumbnail(file, type, cb) {
     cb('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" fill="#3ba845"/><text x="24" y="32" text-anchor="middle" font-size="32" fill="#fff">🎵</text></svg>');
   }
 }
+
+// Update pending uploads UI
 export function updatePendingUploads() {
   const d = document.getElementById('pending-uploads');
   const files = getSelectedFiles();
@@ -70,6 +75,8 @@ export function updatePendingUploads() {
     files.map(f=>`<li>${f.name}</li>`).join('')
   }</ul>`;
 }
+
+// Update media list in sidebar
 export function updateMediaList(showPreviewForMedia) {
   const list = document.getElementById('media-list');
   list.innerHTML = '';
@@ -89,7 +96,7 @@ export function updateMediaList(showPreviewForMedia) {
       showMediaContextMenu(e, media);
     };
 
-    // Drag and drop
+    // Drag and drop for timeline
     li.ondragstart = e => {
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('media-id', media.id);
@@ -100,9 +107,15 @@ export function updateMediaList(showPreviewForMedia) {
   });
 }
 
-// Show context menu for media item (add to tracks)
+// Show context menu for a media item
 function showMediaContextMenu(e, media) {
   let menu = document.getElementById('context-menu');
+  if (!menu) {
+    menu = document.createElement('ul');
+    menu.id = 'context-menu';
+    menu.className = 'context-menu';
+    document.body.appendChild(menu);
+  }
   menu.innerHTML = '';
   const t = getActiveTimeline();
   if (t) {
@@ -127,6 +140,7 @@ function hideContextMenu() {
   if (menu) menu.style.display = 'none';
 }
 
+// Show preview for selected media
 export function showPreviewForMedia(media) {
   const img = document.getElementById('pixi-canvas-container');
   img.innerHTML = '';
