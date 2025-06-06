@@ -4,7 +4,8 @@ export const projectState = {
   media: [],
   timelines: [],
   activeTimelineId: null,
-  // Add any other state properties your app uses here
+  // For file selection in media uploads
+  selectedFiles: []
 };
 
 export function getActiveTimeline() {
@@ -13,6 +14,10 @@ export function getActiveTimeline() {
 
 export function addMedia(mediaObj) {
   projectState.media.push(mediaObj);
+}
+
+export function setProjectState(newState) {
+  Object.assign(projectState, newState);
 }
 
 export function getSelectedFiles() {
@@ -27,4 +32,4 @@ export function clearSelectedFiles() {
   projectState.selectedFiles = [];
 }
 
-export const SECONDS_PER_PIXEL = 0.2; // Or the value you use elsewhere
+export const SECONDS_PER_PIXEL = 0.2; // Adjust as needed for your timeline scaling
