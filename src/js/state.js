@@ -1,15 +1,30 @@
-// Canonical project state and helper accessors
+// Canonical state and helpers for Visual Motion Studio V2
 
 export const projectState = {
   media: [],
   timelines: [],
   activeTimelineId: null,
-  // ... any other state properties you use
+  // Add any other state properties your app uses here
 };
 
 export function getActiveTimeline() {
   return projectState.timelines.find(t => t.id === projectState.activeTimelineId);
 }
 
-// Add any other exports needed by other modules here
-export const SECONDS_PER_PIXEL = 0.2; // or whatever value you use
+export function addMedia(mediaObj) {
+  projectState.media.push(mediaObj);
+}
+
+export function getSelectedFiles() {
+  return projectState.selectedFiles || [];
+}
+
+export function setSelectedFiles(files) {
+  projectState.selectedFiles = files;
+}
+
+export function clearSelectedFiles() {
+  projectState.selectedFiles = [];
+}
+
+export const SECONDS_PER_PIXEL = 0.2; // Or the value you use elsewhere
