@@ -1,6 +1,6 @@
-import { addMedia, getSelectedFiles, setSelectedFiles, clearSelectedFiles, projectState } from './state.js';
+import { addMedia, getSelectedFiles, setSelectedFiles, clearSelectedFiles, projectState, getActiveTimeline } from './state.js';
 import { getMediaType } from './utils.js';
-import { addMediaToTrack, getActiveTimeline, updateTimeline } from './timeline.js';
+import { addMediaToTrack, updateTimeline } from './timeline.js';
 
 // Setup media upload handlers
 export function setupMediaUpload(updatePendingUploads, updateMediaList, showPreviewForMedia) {
@@ -110,12 +110,6 @@ export function updateMediaList(showPreviewForMedia) {
 // Show context menu for a media item
 function showMediaContextMenu(e, media) {
   let menu = document.getElementById('context-menu');
-  if (!menu) {
-    menu = document.createElement('ul');
-    menu.id = 'context-menu';
-    menu.className = 'context-menu';
-    document.body.appendChild(menu);
-  }
   menu.innerHTML = '';
   const t = getActiveTimeline();
   if (t) {

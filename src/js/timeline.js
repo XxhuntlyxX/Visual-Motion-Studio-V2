@@ -1,14 +1,11 @@
 import { projectState, getActiveTimeline, SECONDS_PER_PIXEL } from './state.js';
 import { formatTime } from './utils.js';
 
-import { projectState } from './state.js';
+// ...rest of your code...
+// DO NOT re-declare projectState or getActiveTimeline here!
 
-export function getActiveTimeline() {
-  return projectState.timelines.find(t => t.id === projectState.activeTimelineId);
-}
-
-// --- Context menu for adding tracks ---
 export function setupTrackPanelContextMenu(updateTimeline) {
+  // Remove old menu if any
   let menu = document.getElementById('track-panel-context-menu');
   if (menu) menu.remove();
 
@@ -39,10 +36,8 @@ export function setupTrackPanelContextMenu(updateTimeline) {
     menu.style.display = "none";
   };
 
-  // Context menu handler (fires on empty area of track timeline)
   const tracksCol = document.getElementById('timeline-tracks-col');
   tracksCol.addEventListener('contextmenu', function(e) {
-    // Only trigger if right-click target is the tracks container or empty spot (not a clip!)
     if (
       e.target === tracksCol ||
       e.target.classList.contains('timeline-track-row') ||
@@ -54,7 +49,6 @@ export function setupTrackPanelContextMenu(updateTimeline) {
       menu.style.top = `${e.pageY}px`;
     }
   });
-  // Hide on click elsewhere
   document.body.addEventListener('click', () => { menu.style.display = "none"; });
 }
 
@@ -72,6 +66,7 @@ export function updateTimelineMeta() {
       `${t.name} | ${t.codec} | ${t.fps} FPS | ${t.width}x${t.height}`;
   }
 }
+
 export function updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta) {
   const list = document.getElementById('timeline-list');
   list.innerHTML = '';
@@ -89,12 +84,14 @@ export function updateTimelineList(updateTimelineSettings, updateTimeline, updat
     list.appendChild(li);
   });
 }
+
 export function updateTimelineSettings() {
   const t = getActiveTimeline();
   const d = document.getElementById('timeline-settings');
   if (!t) { d.textContent = ''; return; }
   d.textContent = `Codec: ${t.codec} | FPS: ${t.fps} | Res: ${t.width}x${t.height}`;
 }
+
 export function updateTimeline() {
   const t = getActiveTimeline();
   const controlsCol = document.getElementById('track-controls-col');

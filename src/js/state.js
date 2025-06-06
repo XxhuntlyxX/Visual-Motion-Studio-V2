@@ -1,33 +1,15 @@
-export let projectState = {
+// Canonical project state and helper accessors
+
+export const projectState = {
   media: [],
   timelines: [],
-  activeTimelineId: null
+  activeTimelineId: null,
+  // ... any other state properties you use
 };
-export let selectedFiles = [];
-export const SECONDS_PER_PIXEL = 0.2;
 
-export function setActiveTimelineId(id) {
-  projectState.activeTimelineId = id;
-}
 export function getActiveTimeline() {
   return projectState.timelines.find(t => t.id === projectState.activeTimelineId);
 }
-export function addTimeline(timeline) {
-  projectState.timelines.push(timeline);
-  setActiveTimelineId(timeline.id);
-}
-export function addMedia(media) {
-  projectState.media.push(media);
-}
-export function setSelectedFiles(files) {
-  selectedFiles = files;
-}
-export function getSelectedFiles() {
-  return selectedFiles;
-}
-export function clearSelectedFiles() {
-  selectedFiles = [];
-}
-export function setProjectState(newState) {
-  projectState = newState;
-}
+
+// Add any other exports needed by other modules here
+export const SECONDS_PER_PIXEL = 0.2; // or whatever value you use
