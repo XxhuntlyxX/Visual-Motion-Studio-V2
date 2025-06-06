@@ -1,6 +1,12 @@
 import { projectState, getActiveTimeline, SECONDS_PER_PIXEL } from './state.js';
 import { formatTime } from './utils.js';
 
+import { projectState } from './state.js';
+
+export function getActiveTimeline() {
+  return projectState.timelines.find(t => t.id === projectState.activeTimelineId);
+}
+
 // --- Context menu for adding tracks ---
 export function setupTrackPanelContextMenu(updateTimeline) {
   let menu = document.getElementById('track-panel-context-menu');
