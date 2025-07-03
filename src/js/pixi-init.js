@@ -1,10 +1,10 @@
-import * as PIXI from '../libs/pixi.js';
+import * as PIXI from 'https://cdn.skypack.dev/pixi.js';
 
 export let pixiApp = null;
 
 export function initPixi() {
   const container = document.getElementById('pixi-canvas-container');
-  container.innerHTML = ""; // Clear existing canvas if any
+  container.innerHTML = "";
   pixiApp = new PIXI.Application({
     width: 640,
     height: 360,
