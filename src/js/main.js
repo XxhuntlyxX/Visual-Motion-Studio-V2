@@ -5,8 +5,9 @@ import { setupUI } from './ui.js';
 import { setupControls, updatePlayhead } from './controls.js';
 import { setupSaveLoad } from './save-load.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-  initPixi();
+document.addEventListener('DOMContentLoaded', async () => {
+  // Await PIXI app initialization (for v8+)
+  await initPixi();
   updateMediaList(showPreviewForMedia);
   updateTimelineList(updateTimelineSettings, updateTimeline, updateTimelineMeta);
   updateTimelineSettings();
