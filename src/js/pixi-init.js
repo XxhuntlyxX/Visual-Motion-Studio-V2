@@ -1,4 +1,7 @@
+import * as PIXI from 'pixi.js';
+
 export let pixiApp = null;
+
 export function initPixi() {
   const container = document.getElementById('pixi-canvas-container');
   container.innerHTML = ""; // Clear existing canvas if any
