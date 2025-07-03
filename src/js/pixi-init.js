@@ -1,4 +1,4 @@
-import * as PIXI from 'pixi.js';
+import * as PIXI from '../libs/pixi.js';
 
 export let pixiApp = null;
 
